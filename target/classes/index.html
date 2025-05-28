@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestión de Tareas</title>
+  <style>
+    body { font-family: Arial; margin: 2em; }
+    input, button { margin: 0.5em; }
+    .tarea { border-bottom: 1px solid #ccc; padding: 0.5em; }
+    .completada { text-decoration: line-through; color: gray; }
+  </style>
+</head>
+<body>
+  <h1>Lista de Tareas</h1>
+ 
+  <div>
+    <input type="text" id="nuevaDescripcion" placeholder="Nueva tarea">
+    <button onclick="crearTarea()">Agregar</button>
+  </div>
+ 
+  <div id="listaTareas"></div>
+ 
+  <script>
+    const API = "/tareas";
+ 
+    async function cargarTareas() {
+      const res = await fetch(API);
+      const tareas = await res.json();
+      const contenedor = document.getElementById("listaTareas");
+      contenedor.innerHTML = "";
+ 
+      tareas.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "tarea";
+        if (t.completada) div.classList.add("completada");
+ 
+        div.innerHTML = `
+          <input type="text" value="${t.descripcion}" id="desc-${t.id}">
+          <input type="checkbox" ${t.completada ? "checked" : ""} id="check-${t.id}">
+          <button onclick="actualizarTarea(${t.id})">Actualizar</button>
+          <button onclick="eliminarTarea(${t.id})">Eliminar</button>
+        `;
+ 
+        contenedor.appendChild(div);
+      });
+    }
+ 
+    async function crearTarea() {
+    const descripcion = document.getElementById("nuevaDescripcion").value;
+    await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ descripcion })  // ⚠️ esto cambia
+    });
+    document.getElementById("nuevaDescripcion").value = "";
+    cargarTareas(); // ← refresca la lista correctamente
+    }
+ 
+    async function actualizarTarea(id) {
+      const descripcion = document.getElementById(`desc-${id}`).value;
+      const completada = document.getElementById(`check-${id}`).checked;
+      await fetch(`${API}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, descripcion, completada })
+      });
+      cargarTareas();
+    }
+ 
+    async function eliminarTarea(id) {
+      await fetch(`${API}/${id}`, { method: "DELETE" });
+      cargarTareas();
+    }
+ 
+    // Carga inicial
+    cargarTareas();
+  </script>
+</body>
+</html>
